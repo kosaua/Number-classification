@@ -159,5 +159,5 @@ def prepare_training_data(sound_data, showTable):
 ##############   MAIN FUNCTION    ##############
 
 mfcc_params = load_mfcc_params()
-sound_data = loadTrainFilesAndMFCC(mfcc_params, True);
+sound_data = loadTrainFilesAndMFCC(mfcc_params, False);
 training_data = prepare_training_data(sound_data, True)
