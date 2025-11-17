@@ -1,3 +1,5 @@
+from ntpath import join
+import sys
 import librosa
 import numpy as np
 from collections import defaultdict
@@ -6,6 +8,7 @@ from os import listdir
 from os.path import isfile
 import csv
 import os
+import pickle
 
 
 def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, count_delta_delta):
@@ -74,18 +77,21 @@ def load_mfcc_params():
     return params
 
 
-def loadTrainFilesAndMFCC(mfcc_params, showTable):
+def loadTrainFilesAndDetermineMFCC(mfcc_params, showTable):
+    train_data_dir = "train_data"
+    short_wavpaths = [f for f in listdir(train_data_dir) if isfile(join(train_data_dir, f)) and f.endswith('.wav')]
 
+    wavpaths = [join(train_data_dir, f) for f in short_wavpaths]
 
-    wavpaths = [f for f in listdir(".") if isfile(f) and f.endswith('.wav')]
-    print(wavpaths)
     wavpaths.sort()
+    short_wavpaths.sort()  # też posortuj dla spójności
 
     sound_data = defaultdict(list)
 
     print(f"Znaleziono {len(wavpaths)} plików audio.")
 
-    for f in wavpaths:
+    for i, f in enumerate(wavpaths):
+        file_name = short_wavpaths[i]  # odpowiadająca nazwa pliku bez ścieżki
         x, fs = librosa.load(f, sr=16000, mono=True)
         try:
             mfcc = get_mfcc(x, fs, **mfcc_params)
@@ -93,10 +99,10 @@ def loadTrainFilesAndMFCC(mfcc_params, showTable):
             print(f"Błąd MFCC dla {f}: {e}")
             mfcc = None
 
-        sound_data[f[0:2]].append({
+        sound_data[file_name[0:2]].append({
             "MFCC": mfcc,
-            "num": f[6],
-            "filename": f
+            "num": file_name[6],
+            "filename": file_name
         })
     print(f"Wczytano pliki i wyznaczono z nich macierze MFCC.")
 
@@ -119,8 +125,18 @@ def loadTrainFilesAndMFCC(mfcc_params, showTable):
                 rows.append(row)
 
         print(tabulate(rows, headers="keys", tablefmt="grid"))
+    
+    # ZAPIS DO PLIKU PICKLE
+    try:
+        filename = "mfcc_data.pkl"
+        with open(filename, 'wb') as f:
+            pickle.dump(sound_data, f)
+        print(f"Dane MFCC zostały zapisane do pliku: {filename}")
+    except Exception as e:
+        print(f"Błąd podczas zapisywania danych do pliku: {e}")
 
     return sound_data
+    
 
 
 def prepare_training_data(sound_data, showTable):
@@ -156,8 +172,102 @@ def prepare_training_data(sound_data, showTable):
     print("Przygotowano dane do treningu GMM")
     return training_data
 
-##############   MAIN FUNCTION    ##############
+def loadMFFCData(show_table):
+    """Wczytuje dane MFCC z pliku pickle"""
+    try:
+        # Szukanie plików .pkl w bieżącym katalogu
+        pkl_files = [f for f in listdir(".") if isfile(f) and f.endswith('.pkl')]
+        
+        if not pkl_files:
+            print("Nie znaleziono żadnych plików .pkl w bieżącym katalogu.")
+            return None
+        
+        # Jeśli jest wiele plików, pozwól użytkownikowi wybrać
+        if len(pkl_files) > 1:
+            print("Znaleziono następujące pliki .pkl:")
+            for i, filename in enumerate(pkl_files, 1):
+                print(f"{i}. {filename}")
+            
+            try:
+                choice = int(input("Wybierz numer pliku do wczytania: ")) - 1
+                if choice < 0 or choice >= len(pkl_files):
+                    print("Nieprawidłowy wybór.")
+                    return None
+                filename = pkl_files[choice]
+            except ValueError:
+                print("Nieprawidłowy wybór.")
+                return None
+        else:
+            filename = pkl_files[0]
+            print(f"Wczytuję plik: {filename}")
 
-mfcc_params = load_mfcc_params()
-sound_data = loadTrainFilesAndMFCC(mfcc_params, False);
-training_data = prepare_training_data(sound_data, True)
+        # Wczytywanie danych
+        with open(filename, 'rb') as f:
+            sound_data = pickle.load(f)
+        
+        print(f"Pomyślnie wczytano dane MFCC z pliku {filename}")
+             
+
+        if show_table == True:
+            # Wyświetlanie podsumowania wczytanych danych
+            print("\nPodsumowanie wczytanych danych:")
+            
+            rows = []
+            for spk, items in sound_data.items():
+                for d in items:
+                    row = {
+                        "speaker": spk,
+                        "num": d["num"],
+                        "filename": d["filename"]
+                    }
+
+                    if isinstance(d.get("MFCC"), np.ndarray):
+                        row["MFCC"] = f"shape={d['MFCC'].shape}"
+                    else:
+                        row["MFCC"] = "None"
+
+                    rows.append(row)
+
+            print(tabulate(rows, headers="keys", tablefmt="grid"))
+        
+        return sound_data
+        
+    except FileNotFoundError:
+        print(f"Plik {filename} nie został znaleziony.")
+        return None
+    except Exception as e:
+        print(f"Błąd podczas wczytywania danych z pliku: {e}")
+        return None
+
+
+##############   MAIN FUNCTION    ##############
+print("Wybierz opcję\n1.\twczytaj nowe nagrania do trenowania modelu\n2.\twczytaj wcześniej sparametryzowane pliki")
+try:
+    answer = int(input())
+    if answer == 1:
+        mfcc_params = load_mfcc_params()
+        mfcc_data = loadTrainFilesAndDetermineMFCC(mfcc_params, False)
+    elif answer == 2:
+        mfcc_data = loadMFFCData(False)
+        if mfcc_data is None:
+            print("Nie udało się wczytać danych. Zakończono program.")
+            sys.exit(0)
+    else:
+        print("Wybrano niepoprawną wartość.")
+        sys.exit(0)
+
+    # Kontynuuj przetwarzanie z mfcc_data
+    if mfcc_data is not None:
+        training_data = prepare_training_data(mfcc_data, True)
+    else:
+        print("Brak danych do przetworzenia.")
+        
+except ValueError:
+    print("Nieprawidłowy wybór. Proszę wprowadzić liczbę 1 lub 2.")
+    sys.exit(1)
+except Exception as e:
+    print(f"Wystąpił nieoczekiwany błąd: {e}")
+    sys.exit(1)
+
+
+# training_data = prepare_training_data(sound_data, True)
