@@ -10,6 +10,7 @@ from os.path import isfile
 import csv
 import os
 import pickle
+import random
 
 
 def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, count_delta_delta):
@@ -240,6 +241,40 @@ def loadMFFCData(show_table):
     except Exception as e:
         print(f"Błąd podczas wczytywania danych z pliku: {e}")
         return None
+    
+
+
+def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
+
+    if seed is not None:
+        random.seed(seed)
+
+    speakers = list(sound_data.keys())
+    num_test = max(1, int(len(speakers) * test_fraction))
+    test_speakers = random.sample(speakers, num_test)
+    train_speakers = [s for s in speakers if s not in test_speakers]
+
+    print(f"Mówcy do testu: {test_speakers}")
+
+    # Funkcja pomocnicza do konwersji listy nagrań w dict {cyfra: macierz}
+    def aggregate_by_digit(speaker_list):
+        data = defaultdict(list)
+        for spk in speaker_list:
+            for sample in sound_data[spk]:
+                mfcc = sample.get("MFCC")
+                label = sample.get("num")
+                if mfcc is not None:
+                    data[label].append(mfcc)
+        # Łączymy wszystkie ramki w macierze
+        for label in data:
+            data[label] = np.vstack(data[label])
+        return data
+
+    train_data = aggregate_by_digit(train_speakers)
+    test_data = aggregate_by_digit(test_speakers)
+
+    return train_data, test_data
+
 
 
 ##############   MAIN FUNCTION    ##############
@@ -260,7 +295,8 @@ try:
 
     # Kontynuuj przetwarzanie z mfcc_data
     if mfcc_data is not None:
-        training_data = prepare_training_data(mfcc_data, True)
+        train_data, test_data = split_train_test_by_speaker(mfcc_data, test_fraction=0.2, seed=42)
+
     else:
         print("Brak danych do przetworzenia.")
         
@@ -278,12 +314,12 @@ except Exception as e:
 ################ TRENING GMM ###################
 
 
-def train_gmms(training_dict, num_components=16, cov_type='diag', max_iter=200):
+def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
 
     gmm_models = {}
 
     for digit, mfcc in training_dict.items():
-        print(f"Trenuję GMM dla cyfry {digit} na {mfcc.shape[0]} ramkach...")
+        print(f"Trenuję GMM dla cyfre {digit} na {mfcc.shape[0]} ramkach...")
 
         gmm = GaussianMixture(
             n_components=num_components,
@@ -298,5 +334,4 @@ def train_gmms(training_dict, num_components=16, cov_type='diag', max_iter=200):
     print("Trenowanie wszystkich modeli zakończone.")
     return gmm_models
 
-
-models_dict = train_gmms(training_data, num_components=16)
+models_dict = train_gmms(train_data, num_components=16)
