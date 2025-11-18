@@ -256,24 +256,7 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
 
     print(f"Mówcy do testu: {test_speakers}")
 
-    # Funkcja pomocnicza do konwersji listy nagrań w dict {cyfra: macierz}
-    def aggregate_by_digit(speaker_list):
-        data = defaultdict(list)
-        for spk in speaker_list:
-            for sample in sound_data[spk]:
-                mfcc = sample.get("MFCC")
-                label = sample.get("num")
-                if mfcc is not None:
-                    data[label].append(mfcc)
-        # Łączymy wszystkie ramki w macierze
-        for label in data:
-            data[label] = np.vstack(data[label])
-        return data
-
-    train_data = aggregate_by_digit(train_speakers)
-    test_data = aggregate_by_digit(test_speakers)
-
-    return train_data, test_data
+    return train_speakers, test_speakers
 
 
 
@@ -295,8 +278,13 @@ try:
 
     # Kontynuuj przetwarzanie z mfcc_data
     if mfcc_data is not None:
-        train_data, test_data = split_train_test_by_speaker(mfcc_data, test_fraction=0.2, seed=42)
+        train_speakers, test_speakers = split_train_test_by_speaker(mfcc_data, test_fraction=0.2, seed=42)
 
+        # Przygotowanie danych treningowych
+        train_data = prepare_training_data({k: mfcc_data[k] for k in train_speakers}, showTable=True)
+
+        # Przygotowanie danych testowych
+        test_data = prepare_training_data({k: mfcc_data[k] for k in test_speakers}, showTable=True)
     else:
         print("Brak danych do przetworzenia.")
         
@@ -319,8 +307,6 @@ def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
     gmm_models = {}
 
     for digit, mfcc in training_dict.items():
-        print(f"Trenuję GMM dla cyfre {digit} na {mfcc.shape[0]} ramkach...")
-
         gmm = GaussianMixture(
             n_components=num_components,
             covariance_type=cov_type,
