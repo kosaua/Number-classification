@@ -79,7 +79,7 @@ def load_mfcc_params():
     return params
 
 
-def loadTrainFilesAndDetermineMFCC(mfcc_params, showTable):
+def load_train_files_and_determine_mfcc(mfcc_params, showTable):
     train_data_dir = "train_data"
     short_wavpaths = [f for f in listdir(train_data_dir) if isfile(join(train_data_dir, f)) and f.endswith('.wav')]
 
@@ -175,7 +175,7 @@ def prepare_training_data(sound_data, showTable):
     return training_data
 
 
-def loadMFFCData(show_table):
+def load_mfcc_data(show_table):
     """Wczytuje dane MFCC z pliku pickle"""
     try:
         # Szukanie plików .pkl w bieżącym katalogu
@@ -258,8 +258,6 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
 
     return train_speakers, test_speakers
 
-################ TRENING GMM ###################
-
 
 def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
 
@@ -287,9 +285,9 @@ try:
     answer = int(input())
     if answer == 1:
         mfcc_params = load_mfcc_params()
-        mfcc_data = loadTrainFilesAndDetermineMFCC(mfcc_params, False)
+        mfcc_data = load_train_files_and_determine_mfcc(mfcc_params, False)
     elif answer == 2:
-        mfcc_data = loadMFFCData(False)
+        mfcc_data = load_mfcc_data(False)
         if mfcc_data is None:
             print("Nie udało się wczytać danych. Zakończono program.")
             sys.exit(0)
@@ -306,11 +304,12 @@ try:
 
         # Przygotowanie danych testowych
         test_data = prepare_training_data({k: mfcc_data[k] for k in test_speakers}, showTable=True)
+
     else:
         print("Brak danych do przetworzenia.")
 
-    models_dict = train_gmms(train_data, num_components=16)
-        
+    models_dict = train_gmms(train_data, num_components=8)
+
 except ValueError:
     print("Nieprawidłowy wybór. Proszę wprowadzić liczbę 1 lub 2.")
     sys.exit(1)
