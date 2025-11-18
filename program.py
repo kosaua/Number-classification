@@ -1,12 +1,12 @@
 import librosa
 import numpy as np
+from sklearn.mixture import GaussianMixture
 from collections import defaultdict
 from tabulate import tabulate
 from os import listdir
 from os.path import isfile
 import csv
-import os
-
+import os   
 
 def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, count_delta_delta):
     try:
@@ -75,7 +75,9 @@ def load_mfcc_params():
 
 
 def loadTrainFilesAndMFCC(mfcc_params, showTable):
-
+    original_dir = os.getcwd()
+    train_dir = os.path.join(original_dir, "train_data")
+    os.chdir(train_dir)
 
     wavpaths = [f for f in listdir(".") if isfile(f) and f.endswith('.wav')]
     print(wavpaths)
@@ -156,8 +158,32 @@ def prepare_training_data(sound_data, showTable):
     print("Przygotowano dane do treningu GMM")
     return training_data
 
+
+def train_gmms(training_dict, num_components=16, cov_type='diag', max_iter=200):
+
+    gmm_models = {}
+
+    for digit, mfcc in training_dict.items():
+        print(f"Trenuję GMM dla cyfry {digit} na {mfcc.shape[0]} ramkach...")
+
+        gmm = GaussianMixture(
+            n_components=num_components,
+            covariance_type=cov_type,
+            max_iter=max_iter,
+            verbose=1
+        )
+
+        gmm.fit(mfcc)
+        gmm_models[digit] = gmm
+
+    print("Trenowanie wszystkich modeli zakończone.")
+    return gmm_models
+
+
 ##############   MAIN FUNCTION    ##############
 
 mfcc_params = load_mfcc_params()
-sound_data = loadTrainFilesAndMFCC(mfcc_params, True);
+sound_data = loadTrainFilesAndMFCC(mfcc_params, True)
 training_data = prepare_training_data(sound_data, True)
+
+models_dict = train_gmms(training_data, num_components=16)
