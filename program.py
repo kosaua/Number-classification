@@ -258,6 +258,27 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
 
     return train_speakers, test_speakers
 
+################ TRENING GMM ###################
+
+
+def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
+
+    gmm_models = {}
+
+    for digit, mfcc in training_dict.items():
+        gmm = GaussianMixture(
+            n_components=num_components,
+            covariance_type=cov_type,
+            max_iter=max_iter,
+            verbose=1
+        )
+
+        gmm.fit(mfcc)
+        gmm_models[digit] = gmm
+
+    print("Trenowanie wszystkich modeli zakończone.")
+    return gmm_models
+
 
 
 ##############   MAIN FUNCTION    ##############
@@ -287,6 +308,8 @@ try:
         test_data = prepare_training_data({k: mfcc_data[k] for k in test_speakers}, showTable=True)
     else:
         print("Brak danych do przetworzenia.")
+
+    models_dict = train_gmms(train_data, num_components=16)
         
 except ValueError:
     print("Nieprawidłowy wybór. Proszę wprowadzić liczbę 1 lub 2.")
@@ -299,25 +322,4 @@ except Exception as e:
 # training_data = prepare_training_data(sound_data, True)
 
 
-################ TRENING GMM ###################
 
-
-def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
-
-    gmm_models = {}
-
-    for digit, mfcc in training_dict.items():
-        gmm = GaussianMixture(
-            n_components=num_components,
-            covariance_type=cov_type,
-            max_iter=max_iter,
-            verbose=1
-        )
-
-        gmm.fit(mfcc)
-        gmm_models[digit] = gmm
-
-    print("Trenowanie wszystkich modeli zakończone.")
-    return gmm_models
-
-models_dict = train_gmms(train_data, num_components=16)
