@@ -138,7 +138,6 @@ def load_train_files_and_determine_mfcc(mfcc_params, showTable):
         print(f"Błąd podczas zapisywania danych do pliku: {e}")
 
     return sound_data
-    
 
 
 def prepare_training_data(sound_data, showTable):
@@ -279,6 +278,49 @@ def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
 
 
 
+def classifier(gmm_models, mfcc):
+    scores = {}
+    for number, model in gmm_models.items():
+        try:
+            score = model.score(mfcc)
+            scores[number] = score
+        except Exception as e:
+            print(f"Model {number} zgłosił błąd: {e}")
+            scores[number] = -np.inf
+
+    predicted = max(scores, key=scores.get)
+    print(f"\nPrzewidywana liczba: {predicted} wynik: {scores}")
+
+    return predicted, scores
+
+
+def test(gmm_models, training_data, n_samples=3):
+
+    correct = 0
+    tested = 0
+
+    for number, mfcc_matrix in training_data.items():
+        print(f"\nTestowanie dla cyfry: {number}")
+
+        if len(mfcc_matrix) < n_samples:
+            print(f"Za mało próbek do testowania dla cyfry {number}.")
+            continue
+
+        idx = np.random.choice(mfcc_matrix.shape[0], n_samples, replace=False)
+
+        for i in idx:
+            sample_mfcc = mfcc_matrix[i:i+1, :] 
+            predicted,scores = classifier(gmm_models, sample_mfcc)
+
+            if predicted == number:
+                correct += 1
+            tested += 1
+        
+    accuracy = correct / tested * 100
+    print(f"Dokładność testu: {accuracy:.2f}% ({correct}/{tested})")
+    return accuracy
+
+
 ##############   MAIN FUNCTION    ##############
 print("Wybierz opcję\n1.\twczytaj nowe nagrania do trenowania modelu\n2.\twczytaj wcześniej sparametryzowane pliki")
 try:
@@ -309,6 +351,7 @@ try:
         print("Brak danych do przetworzenia.")
 
     models_dict = train_gmms(train_data, num_components=8)
+    test(models_dict, train_data, n_samples=5)
 
 except ValueError:
     print("Nieprawidłowy wybór. Proszę wprowadzić liczbę 1 lub 2.")
