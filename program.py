@@ -278,7 +278,7 @@ def train_gmms(training_dict, num_components=8, cov_type='diag', max_iter=200):
 
 
 
-def classifier(gmm_models, mfcc):
+def classifier(gmm_models, mfcc,showTable=True):
     scores = {}
     for number, model in gmm_models.items():
         try:
@@ -289,7 +289,15 @@ def classifier(gmm_models, mfcc):
             scores[number] = -np.inf
 
     predicted = max(scores, key=scores.get)
-    print(f"\nPrzewidywana liczba: {predicted} wynik: {scores}")
+
+    if showTable==True:
+      print("\nOceny modeli GMM dla podanej próbki MFCC:")
+      print('Przewidywana liczba:',predicted)
+      score_table = [{"cyfra": number, "wynik": score}for number, score in scores.items()]
+      from tabulate import tabulate
+      print(tabulate(score_table, headers="keys", tablefmt="grid"))
+
+    #print(f"\nPrzewidywana liczba: {predicted} wynik: {scores}")
 
     return predicted, scores
 
@@ -300,7 +308,7 @@ def test(gmm_models, training_data, n_samples=3):
     tested = 0
 
     for number, mfcc_matrix in training_data.items():
-        print(f"\nTestowanie dla cyfry: {number}")
+        print(f"\n---------Testowanie dla cyfry: {number}---------")
 
         if len(mfcc_matrix) < n_samples:
             print(f"Za mało próbek do testowania dla cyfry {number}.")
