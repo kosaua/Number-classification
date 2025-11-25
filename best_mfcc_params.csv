@@ -1,0 +1,2 @@
+n_mfcc,n_fft,win_length,hop_length,n_mels,count_delta,count_delta_delta
+13,512,512,200,26,True,True
