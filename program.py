@@ -26,7 +26,7 @@ DEFAULT_MFCC_PARAMS = {
 }
 
 DEFAULT_GMM_PARAMS = {
-    'num_components': 8,
+    'n_components': 8,
     'cov_type': 'diag',
     'max_iter': 200,
     'random_state': 42
@@ -343,18 +343,18 @@ def train_gmms(training_dict, gmm_params=None):
             print(f"Brak danych dla cyfry {digit}, pomijam...")
             continue
             
-        print(f"Trenowanie modelu dla cyfry {digit}...")
+        # print(f"Trenowanie modelu dla cyfry {digit}...")
         gmm = GaussianMixture(
-            n_components=gmm_params['num_components'],
+            n_components=gmm_params['n_components'],
             covariance_type=gmm_params['cov_type'],
-            max_iter=gmm_params['max_iter'],
-            random_state=gmm_params['random_state'],
+            # max_iter=gmm_params['max_iter'],
+            # random_state=gmm_params['random_state'],
             verbose=0
         )
 
         gmm.fit(mfcc)
         gmm_models[digit] = gmm
-        print(f"  Wytrenowano model dla cyfry: {digit}")
+        # print(f"  Wytrenowano model dla cyfry: {digit}")
 
     print("Trenowanie wszystkich modeli zakończone.")
     return gmm_models
@@ -768,7 +768,7 @@ def quick_prototype():
         print("Najpierw przygotuj dane (opcja 1)!")
         return
     
-    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_size=0.2, seed=42)
+    train_speakers, test_speakers = split_train_test_by_speaker(dataset, 0.2, seed=42)
     train_data = {k: dataset[k] for k in train_speakers}
     test_data = {k: dataset[k] for k in test_speakers}
     
@@ -857,7 +857,7 @@ def evaluate_system_stage():
         return
     
     # Podział na trening i test (30% test)
-    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_size=0.3, seed=42)
+    train_speakers, test_speakers = split_train_test_by_speaker(dataset, 0.3, seed=42)
     test_data = {k: dataset[k] for k in test_speakers}
     test_data_prepared = prepare_training_data(test_data, True)
     
