@@ -1,2 +1,2 @@
-n_components,cov_type
+n_components,covariance_type
 4,tied

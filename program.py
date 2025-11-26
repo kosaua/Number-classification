@@ -27,7 +27,7 @@ DEFAULT_MFCC_PARAMS = {
 
 DEFAULT_GMM_PARAMS = {
     'n_components': 8,
-    'cov_type': 'diag',
+    'covariance_type': 'diag',
     'max_iter': 200,
     'random_state': 42
 }
@@ -275,12 +275,10 @@ def validate_data_quality(dataset):
                 digit = sample.get("num")
                 mfcc_data = sample["MFCC"]
                 
-                # Licznik per cyfra
                 stats['samples_per_digit'][digit] += 1
                 stats['total_samples'] += 1
                 speaker_samples += 1
                 
-                # Średnia liczba ramek per cyfra
                 if mfcc_data.shape[0] > 0:
                     stats['avg_frames_per_digit'][digit] = mfcc_data.shape[0]
             else:
@@ -290,7 +288,6 @@ def validate_data_quality(dataset):
         if speaker_samples > 0:
             stats['speakers_with_data'] += 1
     
-    # Liczba unikalnych cyfr z danymi
     stats['digits_with_data'] = len([d for d, count in stats['samples_per_digit'].items() if count > 0])
     
     print("\n=== RAPORT JAKOŚCI DANYCH ===")
@@ -346,11 +343,11 @@ def train_gmms(training_dict, gmm_params=None):
         # print(f"Trenowanie modelu dla cyfry {digit}...")
         gmm = GaussianMixture(
             n_components=gmm_params['n_components'],
-            covariance_type=gmm_params['cov_type'],
-            # max_iter=gmm_params['max_iter'],
-            # random_state=gmm_params['random_state'],
-            verbose=0
-        )
+            covariance_type=gmm_params['covariance_type'],
+            max_iter=gmm_params.get('max_iter', 200),
+            random_state=gmm_params.get('random_state',42),
+            verbose=0)
+        
 
         gmm.fit(mfcc)
         gmm_models[digit] = gmm
@@ -536,17 +533,14 @@ def evaluate_system(gmm_models, test_dataset, n_samples=5):
         print("Brak danych do ewaluacji!")
         return None
     
-    # Obliczanie metryk
     accuracy = accuracy_score(all_true_labels, all_predictions) * 100
     precision = precision_score(all_true_labels, all_predictions, average='weighted', zero_division=0)
     recall = recall_score(all_true_labels, all_predictions, average='weighted', zero_division=0)
     f1 = f1_score(all_true_labels, all_predictions, average='weighted', zero_division=0)
     
-    # Szczegółowy raport
     report = classification_report(all_true_labels, all_predictions, output_dict=True, zero_division=0)
     cm = confusion_matrix(all_true_labels, all_predictions)
     
-    # Metryki per klasa
     per_class_metrics = {}
     for digit in sorted(set(all_true_labels)):
         if digit in report:
@@ -573,7 +567,6 @@ def print_confusion_matrix(cm, labels=None):
     if labels is None:
         labels = [str(i) for i in range(10)]
     
-    # Nagłówki
     headers = [f"Pred {label}" for label in labels]
     rows = []
     
@@ -587,9 +580,7 @@ def print_confusion_matrix(cm, labels=None):
 def optimize_parameters_full(dataset):
     """Kompleksowa optymalizacja parametrów MFCC i GMM"""
     print("=== ROZPOCZĘCIE OPTYMALIZACJI PARAMETRÓW ===")
-    print("UWAGA: Proces może zająć dużo czasu...")
     
-    # Parametry do testowania
     n_mfcc_values = [13, 16, 20]
     n_fft_values = [512, 1024]
     win_length_values = [400, 512]
@@ -597,9 +588,9 @@ def optimize_parameters_full(dataset):
     n_mels_values = [26, 32]
     
     delta_combinations = [
-        (False, False),  # tylko MFCC
-        (True, False),   # MFCC + delta
-        (True, True)     # MFCC + delta + delta-delta
+        (False, False),  
+        (True, False),   
+        (True, True)     
     ]
     
     gmm_components = [4, 8, 12]
@@ -634,14 +625,12 @@ def optimize_parameters_full(dataset):
                             }
                             
                             try:
-                                # Przetwarzanie z aktualnymi parametrami MFCC
                                 print(f"\nPrzetwarzanie MFCC: {mfcc_params}")
                                 processed_data = load_train_files_and_determine_mfcc(mfcc_params, False)
                                 
                                 if processed_data is None or len(processed_data) == 0:
                                     continue
                                 
-                                # Podział na trening i test
                                 train_speakers, test_speakers = split_train_test_by_speaker(processed_data, test_fraction=0.2, seed=42)
                                 
                                 if len(train_speakers) == 0 or len(test_speakers) == 0:
@@ -668,16 +657,16 @@ def optimize_parameters_full(dataset):
                                         
                                         try:
                                             gmm_params = {
-                                                'num_components': n_components,
-                                                'cov_type': cov_type,
+                                                'n_components': n_components,
+                                                'covariance_type': cov_type,
                                                 'max_iter': 200,
                                                 'random_state': 42
                                             }
                                             
-                                            # Trening i test
                                             models = train_gmms(train_data, gmm_params)
                                             accuracy, _, _ = calculate_accuracy(models, test_data, n_samples=3)
                                             
+
                                             result = {
                                                 "mfcc_params": mfcc_params.copy(),
                                                 "gmm_params": gmm_params.copy(),
@@ -696,7 +685,6 @@ def optimize_parameters_full(dataset):
                                 print(f"Błąd przetwarzania: {e}")
                                 continue
     
-    # Znajdowanie najlepszych parametrów
     if results:
         results.sort(key=lambda x: x["test_accuracy"], reverse=True)
         best_result = results[0]
@@ -706,10 +694,8 @@ def optimize_parameters_full(dataset):
         print(f"Parametry MFCC: {best_result['mfcc_params']}")
         print(f"Parametry GMM: {best_result['gmm_params']}")
         
-        # Zapis najlepszych parametrów
         save_best_parameters(best_result['mfcc_params'], best_result['gmm_params'])
         
-        # Podsumowanie top 10
         print(f"\n=== TOP 10 KOMBINACJI ===")
         top_results = results[:10]
         summary_table = []
@@ -727,8 +713,8 @@ def optimize_parameters_full(dataset):
                 "n_mels": mfcc["n_mels"],
                 "delta": "✓" if mfcc["count_delta"] else "✗",
                 "delta2": "✓" if mfcc["count_delta_delta"] else "✗",
-                "GMM_comp": gmm["num_components"],
-                "GMM_cov": gmm["cov_type"],
+                "GMM_comp": gmm["n_components"],
+                "GMM_cov": gmm["covariance_type"],
                 "Accuracy%": f"{result['test_accuracy']:.2f}"
             })
         
@@ -740,7 +726,6 @@ def optimize_parameters_full(dataset):
         return None
 
 
-# Funkcje dla głównego menu
 def prepare_data_stage():
     """Etap 1: Przygotowanie danych"""
     print("=== PRZYGOTOWANIE DANYCH ===")
@@ -780,7 +765,6 @@ def quick_prototype():
     accuracy, _, _ = calculate_accuracy(models, test_data_prepared, n_samples=5)
     print(f"Skuteczność prototypu: {accuracy:.2f}%")
     
-    # Zapis modelu prototypowego
     save_gmm_models(models, "prototype_models.pkl")
 
 
@@ -823,11 +807,9 @@ def train_final_model():
         print("Najpierw przygotuj dane (opcja 1)!")
         return
     
-    # Użyj najlepszych parametrów lub domyślnych
     best_mfcc, best_gmm = load_best_parameters()
     print(f"Używam parametrów: MFCC={best_mfcc}, GMM={best_gmm}")
     
-    # Przetwarzanie z najlepszymi parametrami MFCC
     print("Przetwarzanie danych z optymalnymi parametrami MFCC...")
     final_dataset = load_train_files_and_determine_mfcc(best_mfcc, False)
     if final_dataset is None:
@@ -850,18 +832,16 @@ def evaluate_system_stage():
         print("Najpierw wytrenuj końcowy model (opcja 3)!")
         return
     
-    # Użyj oddzielnego zestawu testowego lub podziel dane
     dataset = load_processed_dataset()
     if dataset is None:
         print("Brak danych testowych!")
         return
     
-    # Podział na trening i test (30% test)
-    train_speakers, test_speakers = split_train_test_by_speaker(dataset, 0.3, seed=42)
+    train_speakers, test_speakers = split_train_test_by_speaker(dataset, 0.2, seed=42)
     test_data = {k: dataset[k] for k in test_speakers}
     test_data_prepared = prepare_training_data(test_data, True)
     
-    print("Przeprowadzam kompleksową ewaluację...")
+    print("Przeprowadzam kompleksową ewaluację")
     evaluation_results = evaluate_system(final_model, test_data_prepared, n_samples=5)
     
     if evaluation_results:
@@ -895,67 +875,78 @@ def evaluate_system_stage():
 
 ##############   MAIN FUNCTION    ##############
 def main():
-    print("=== SYSTEM ROZPOZNAWANIA CYFR - ROZWÓJ ===\n")
-    print("Wybierz etap rozwoju:")
-    print("1. PRZYGOTOWANIE DANYCH")
-    print("   - Ekstrakcja cech MFCC z datasetu")
-    print("   - Walidacja jakości danych")
-    print()
-    print("2. EKSPERYMENTY I OPTYMALIZACJA")
-    print("   a) Szybki prototyp (domyślne parametry)")
-    print("   b) Optymalizacja parametrów MFCC i GMM")
-    print("   c) Testy krzyżowe i walidacja")
-    print()
-    print("3. TRENING KOŃCOWEGO MODELU")
-    print("   - Trening na pełnym datasetcie")
-    print("   - Zapis ostatecznego klasyfikatora")
-    print()
-    print("4. EWALUACJA SYSTEMU")
-    print("   - Testowanie końcowej skuteczności")
-    print("   - Metryki jakości klasyfikacji")
-    print()
-    print("5. WYJŚCIE")
+    while True:
+        print("=== SYSTEM ROZPOZNAWANIA CYFR - ROZWÓJ ===\n")
+        print("Wybierz etap rozwoju:")
+        print("1. PRZYGOTOWANIE DANYCH")
+        print("   - Ekstrakcja cech MFCC z datasetu")
+        print("   - Walidacja jakości danych")
+        print()
+        print("2. EKSPERYMENTY I OPTYMALIZACJA")
+        print("   a) Szybki prototyp (domyślne parametry)")
+        print("   b) Optymalizacja parametrów MFCC i GMM")
+        print("   c) Testy krzyżowe i walidacja")
+        print()
+        print("3. TRENING KOŃCOWEGO MODELU")
+        print("   - Trening na pełnym datasetcie")
+        print("   - Zapis ostatecznego klasyfikatora")
+        print()
+        print("4. EWALUACJA SYSTEMU")
+        print("   - Testowanie końcowej skuteczności")
+        print("   - Metryki jakości klasyfikacji")
+        print()
+        print("5. WYJŚCIE")
 
-    try:
-        answer = input("Twój wybór: ").strip()
-        
-        if answer == "1":
-            prepare_data_stage()
+        try:
+            answer = input("Twój wybór: ").strip()
             
-        elif answer == "2":
-            print("Wybierz tryb eksperymentów:")
-            print("a) Szybki prototyp")
-            print("b) Optymalizacja parametrów")  
-            print("c) Testy krzyżowe")
-            
-            sub_choice = input("Twój wybór (a/b/c): ").lower()
-            
-            if sub_choice == "a":
-                quick_prototype()
-            elif sub_choice == "b":
-                optimize_parameters_stage()
-            elif sub_choice == "c":
-                cross_validation_stage()
-            else:
-                print("Nieprawidłowy wybór")
+            if answer == "1":
+                prepare_data_stage()
+                continue
                 
-        elif answer == "3":
-            train_final_model()
-            
-        elif answer == "4":
-            evaluate_system_stage()
-            
-        elif answer == "5":
-            print("Zakończono program.")
-            sys.exit(0)
-            
-        else:
-            print("Wybrano niepoprawną wartość.")
+            elif answer == "2":
+                print("Wybierz tryb eksperymentów:")
+                print("a) Szybki prototyp")
+                print("b) Optymalizacja parametrów")  
+                print("c) Testy krzyżowe")
+                
+                sub_choice = input("Twój wybór (a/b/c): ").lower()
+                
+                if sub_choice == "a":
+                    quick_prototype()
+                    
+                elif sub_choice == "b":
+                    optimize_parameters_stage()
+                    
+                elif sub_choice == "c":
+                    cross_validation_stage()
+                    
+                else:
+                    print("Nieprawidłowy wybór")
+                    continue
+                continue
 
-    except Exception as e:
-        print(f"Wystąpił nieoczekiwany błąd: {e}")
-        import traceback
-        traceback.print_exc()
+            elif answer == "3":
+                train_final_model()
+                continue
+                
+            elif answer == "4":
+                evaluate_system_stage()
+                continue
+                
+            elif answer == "5":
+                print("Zakończono program.")
+                sys.exit(0)
+                break
+                
+            else:
+                print("Wybrano niepoprawną wartość.")
+                continue
+
+        except Exception as e:
+            print(f"Wystąpił nieoczekiwany błąd: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

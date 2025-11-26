@@ -1,2 +1,2 @@
-num_components,cov_type,max_iter,random_state
-4,tied,200,42
+n_components,covariance_type,max_iter,random_state
+12,tied,200,42
