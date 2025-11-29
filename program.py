@@ -768,7 +768,7 @@ def quick_prototype():
         print("Najpierw przygotuj dane (opcja 1)!")
         return
     
-    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_size=0.2, seed=42)
+    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_fraction=0.2, seed=42)
     train_data = {k: dataset[k] for k in train_speakers}
     test_data = {k: dataset[k] for k in test_speakers}
     
@@ -857,7 +857,7 @@ def evaluate_system_stage():
         return
     
     # Podział na trening i test (30% test)
-    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_size=0.3, seed=42)
+    train_speakers, test_speakers = split_train_test_by_speaker(dataset, test_fraction=0.3, seed=42)
     test_data = {k: dataset[k] for k in test_speakers}
     test_data_prepared = prepare_training_data(test_data, True)
     
