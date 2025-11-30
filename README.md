@@ -8,7 +8,7 @@ A Python-based project designed to automatically classify digits from WAV files 
 
 ## Raport:
 [Raport](raport) consists of:
- * General nfo
+ * General info
  * Architecture of the system and data flow
  * Status
  * Results 
