@@ -14,3 +14,10 @@ DEFAULT_GMM_PARAMS = {
     'max_iter': 200,
     'random_state': 42
 }
+
+DEFAULT_MODEL_FILENAME = "gmm_models.pkl"
+FINAL_MODEL_FILENAME = "final_classifier.pkl"
+
+PROCESSED_DATA_FILE = "dataset_processed.pkl"
+BEST_MFCC_PARAMS_FILE = "best_mfcc_params.csv"
+BEST_GMM_PARAMS_FILE = "best_gmm_params.csv"
