@@ -9,18 +9,24 @@ from workflow import (
 )
 
 def print_menu():
-    print("\n" + "="*40)
-    print("   SYSTEM ROZPOZNAWANIA CYFR (GMM)")
-    print("="*40)
-    print("1. Przygotowanie danych (MFCC)")
-    print("2. Eksperymenty:")
-    print("   a) Szybki prototyp")
-    print("   b) Optymalizacja parametrów")
-    print("   c) Walidacja krzyżowa")
-    print("3. Trening modelu końcowego")
-    print("4. Ewaluacja systemu")
-    print("5. Wyjście")
-    print("-" * 40)
+    """Displays the main menu of the application."""
+    # Using a single multi-line string for cleaner menu presentation.
+    menu_text = """
+========================================
+   SYSTEM ROZPOZNAWANIA CYFR (GMM)
+========================================
+1. Przygotowanie danych (MFCC)
+2. Eksperymenty:
+   a) Szybki prototyp
+   b) Optymalizacja parametrów
+   c) Walidacja krzyżowa
+3. Trening modelu końcowego
+4. Ewaluacja systemu
+5. Wyjście
+----------------------------------------
+"""
+    print(menu_text)
+
 
 def main():
     # Menu Action Mapping
@@ -47,9 +53,7 @@ def main():
                 print("\n\nPrzerwano operację przez użytkownika.")
             except Exception as e:
                 print(f"\n[BŁĄD KRYTYCZNY] {e}")
-                # Optional: print traceback for debugging
-                # import traceback; traceback.print_exc()
-            
+                            
             input("\nNaciśnij ENTER, aby kontynuować...")
         else:
             print("\n! Nieprawidłowy wybór. Spróbuj ponownie.")
