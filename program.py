@@ -14,6 +14,12 @@ import os
 import pickle
 import random
 import time
+import io
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
 DEFAULT_MFCC_PARAMS = {
     'n_mfcc': 13,
@@ -138,14 +144,53 @@ def load_gmm_params():
     return params
 
 
+def get_drive():
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    return build('drive', 'v3', credentials=creds)
+
+
+def download_data(folder_id, target="downloaded"):
+    service = get_drive()
+
+    results = service.files().list(
+        q=f"'{folder_id}' in parents", fields="files(id, name, mimeType, size)", pageSize=1000
+        ).execute()
+    
+    files = results.get('files', [])
+    downloaded = 0
+
+    os.makedirs(target, exist_ok=True)
+    for f in files:
+        if f.get('mimeType') != 'application/vnd.google-apps.folder':
+            request = service.files().get_media(fileId=f['id'])
+            with io.FileIO(os.path.join(target, f['name']), 'wb') as file:
+                downloader = MediaIoBaseDownload(file, request)
+                while not downloader.next_chunk()[1]:
+                    pass
+    
+            downloaded += 1
+    print(f"\nPobrano {downloaded}/{len(files)} plików")
+    return target
+
+
 def load_train_files_and_determine_mfcc(mfcc_params, showTable=False):
     """Wczytuje pliki audio i oblicza dla nich MFCC"""
-    train_data_dir = "train_data"
+
+    folder_id = "1WQVB4mqdNBSvpa1SZ8EbUc5eJ--e1t6y"
+    train_data_dir = download_data(folder_id)
+
     if not os.path.exists(train_data_dir):
         print(f"Brak folderu {train_data_dir}!")
         return None
-        
-    short_wavpaths = [f for f in listdir(train_data_dir) if isfile(join(train_data_dir, f)) and f.endswith('.wav')]
+
+    short_wavpaths = [f for f in listdir(train_data_dir) if isfile(join(train_data_dir, f)) and f.lower().endswith('.wav')]
 
     if not short_wavpaths:
         print("Nie znaleziono plików WAV w folderze train_data!")
@@ -153,7 +198,7 @@ def load_train_files_and_determine_mfcc(mfcc_params, showTable=False):
 
     wavpaths = [join(train_data_dir, f) for f in short_wavpaths]
     wavpaths.sort()
-    short_wavpaths.sort()  
+    short_wavpaths.sort()
 
     sound_data = defaultdict(list)
 
@@ -731,7 +776,7 @@ def prepare_data_stage():
     print("=== PRZYGOTOWANIE DANYCH ===")
     mfcc_params = load_mfcc_params()
     
-    print("Ekstrakcja cech MFCC z datasetu...")
+    print("Wczytywanie danych i Ekstrakcja cech MFCC z datasetu...")
     full_dataset = load_train_files_and_determine_mfcc(mfcc_params, True)
     
     if full_dataset is None:
@@ -948,6 +993,8 @@ def main():
             import traceback
             traceback.print_exc()
 
+
+SCOPES = "https://www.googleapis.com/auth/drive.file"
 
 if __name__ == "__main__":
     main()
