@@ -53,7 +53,7 @@ def main():
                 print("\n\nPrzerwano operację przez użytkownika.")
             except Exception as e:
                 print(f"\n[BŁĄD KRYTYCZNY] {e}")
-                            
+
             input("\nNaciśnij ENTER, aby kontynuować...")
         else:
             print("\n! Nieprawidłowy wybór. Spróbuj ponownie.")

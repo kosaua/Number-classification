@@ -136,23 +136,38 @@ def _display_mfcc_summary(sound_data):
     print(tabulate(rows, headers="keys", tablefmt="grid"))
 
 def prepare_training_data(sound_data, show_table=False):
-    """Converts dictionary of samples into concatenated arrays per digit."""
-    training_data = defaultdict(list)
+    """
+    Converts dictionary of samples into concatenated arrays per digit (for GMM training)
+    AND a list of individual samples (for testing/evaluation).
+    
+    Returns:
+        tuple: (final_data_for_training, final_data_for_testing)
+    """
+    training_data_concat = defaultdict(list) # List of MFCCs to be vstacked for GMM fit
+    testing_data_samples = defaultdict(list) # List of dicts: {'MFCC': mfcc, 'num': digit}
 
     for speaker, samples in sound_data.items():
         for s in samples:
             mfcc = s.get("MFCC")
-            if isinstance(mfcc, np.ndarray):
-                training_data[s["num"]].append(mfcc)
+            digit = s["num"]
+            
+            if isinstance(mfcc, np.ndarray) and mfcc.size > 0:
+                training_data_concat[digit].append(mfcc)
+                # Store sample data for testing (important for non-concatenated testing)
+                testing_data_samples[digit].append({
+                    "MFCC": mfcc, 
+                    "filename": s["filename"], 
+                    "num": digit
+                })
 
-    # Stack arrays vertically
-    final_data = {}
+    # 1. Concatenated data for GMM training
+    final_data_for_training = {}
     summary = []
     
-    for label, arrays in training_data.items():
+    for label, arrays in training_data_concat.items():
         if arrays:
             stacked_data = np.vstack(arrays)
-            final_data[label] = stacked_data
+            final_data_for_training[label] = stacked_data
             summary.append({
                 "cyfra": label, 
                 "liczba ramek": stacked_data.shape[0], 
@@ -162,8 +177,12 @@ def prepare_training_data(sound_data, show_table=False):
     if show_table:
         print("Przygotowane dane do treningu GMM:")
         print(tabulate(summary, headers="keys", tablefmt="grid"))
+        
+    # 2. Individual samples for testing
+    # Transform defaultdict(list of dicts) into dict(list of dicts)
+    final_data_for_testing = dict(testing_data_samples) 
 
-    return final_data
+    return final_data_for_training, final_data_for_testing
 
 def validate_data_quality(dataset):
     """Analyzes data quality statistics."""

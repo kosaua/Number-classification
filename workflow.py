@@ -55,13 +55,15 @@ def quick_prototype_stage():
 
     train_spk, test_spk = split_train_test_by_speaker(dataset, test_fraction=0.2, seed=42)
     
-    train_ready = prepare_training_data({k: dataset[k] for k in train_spk}, show_table=True)
-    test_ready = prepare_training_data({k: dataset[k] for k in test_spk}, show_table=False)
+    # Zmienione przypisanie: train_ready to dane sklejone, test_samples_ready to lista próbek
+    train_ready, test_samples_ready = prepare_training_data({k: dataset[k] for k in train_spk}, show_table=True)
+    _, test_samples = prepare_training_data({k: dataset[k] for k in test_spk}, show_table=False)
     
     print("Trenowanie...")
-    models = train_gmms(train_ready) # Uses default params from CSV/Config
+    models = train_gmms(train_ready) 
     
-    acc, _, _ = calculate_accuracy(models, test_ready)
+    # Użycie test_samples w calculate_accuracy
+    acc, _, _ = calculate_accuracy(models, test_samples)
     print(f"\n>> Skuteczność prototypu: {acc:.2f}%")
     save_models(models, "prototype_models.pkl")
 
@@ -89,7 +91,6 @@ def train_final_model_stage():
     mfcc_params, gmm_params = _load_best_or_default_params()
     
     # 2. Re-process data with these params
-    # We cannot use the default 'dataset_processed.pkl' because dimensions might differ
     print("Przetwarzanie danych źródłowych z wybranymi parametrami...")
     final_dataset = load_train_files_and_determine_mfcc(mfcc_params, show_table=False)
     
@@ -97,8 +98,8 @@ def train_final_model_stage():
         print("Błąd przetwarzania danych.")
         return
 
-    # 3. Prepare full training set
-    train_data_prepared = prepare_training_data(final_dataset, show_table=True)
+    # 3. Prepare full training set (tylko pierwsza część krotki - sklejone dane)
+    train_data_prepared, _ = prepare_training_data(final_dataset, show_table=True)
     
     # 4. Train
     print("Trenowanie modelu końcowego...")
@@ -117,11 +118,10 @@ def evaluate_system_stage():
         print("! Najpierw wytrenuj model końcowy (Opcja 3).")
         return
 
-    # 2. Load Params (Must match the model!)
+    # 2. Load Params
     mfcc_params, _ = _load_best_or_default_params()
     
     # 3. Load Data
-    # To be safe, we re-extract features to ensure they match the model's expected input dimensions
     print("Wczytywanie danych do testów...")
     dataset = load_train_files_and_determine_mfcc(mfcc_params, show_table=False)
     
@@ -131,8 +131,10 @@ def evaluate_system_stage():
     # 4. Split (30% for test)
     _, test_speakers = split_train_test_by_speaker(dataset, test_fraction=0.3, seed=42)
     test_data = {k: dataset[k] for k in test_speakers}
-    test_ready = prepare_training_data(test_data, show_table=False)
     
-    # 5. Evaluate
-    metrics = evaluate_system(final_model, test_ready, n_samples=5)
+    # Tylko druga część krotki - próbki do testowania
+    _, test_samples_ready = prepare_training_data(test_data, show_table=False)
+    
+    # 5. Evaluate (usunięto n_samples)
+    metrics = evaluate_system(final_model, test_samples_ready)
     print_evaluation_report(metrics)

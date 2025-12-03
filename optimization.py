@@ -70,8 +70,9 @@ def optimize_parameters_full():
             train_spk, test_spk = split_train_test_by_speaker(dataset, test_fraction=0.2, seed=42)
             if not train_spk or not test_spk: continue
 
-            train_data = prepare_training_data({k: dataset[k] for k in train_spk}, show_table=False)
-            test_data = prepare_training_data({k: dataset[k] for k in test_spk}, show_table=False)
+            # Zmienione przypisanie - train_data to sklejone, test_samples to próbki
+            train_data, _ = prepare_training_data({k: dataset[k] for k in train_spk}, show_table=False)
+            _, test_samples = prepare_training_data({k: dataset[k] for k in test_spk}, show_table=False)
 
             # 3. Train
             gmm_params = {
@@ -81,7 +82,7 @@ def optimize_parameters_full():
             models = train_gmms(train_data, gmm_params)
 
             # 4. Evaluate
-            accuracy, _, _ = calculate_accuracy(models, test_data, n_samples=3)
+            accuracy, _, _ = calculate_accuracy(models, test_samples) 
             print(f" -> Wynik: {accuracy:.2f}%")
 
             results.append({
