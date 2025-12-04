@@ -1,7 +1,6 @@
 import sys
 from typing import Tuple, Dict, Any
 
-# Custom imports
 from config import (
     PROCESSED_DATA_FILE, DEFAULT_MODEL_FILENAME, FINAL_MODEL_FILENAME,
     BEST_MFCC_PARAMS_FILE, BEST_GMM_PARAMS_FILE
@@ -21,6 +20,7 @@ from optimization import optimize_parameters_full
 import eval_2025
 from utils import save_results_for_eval_script
 from gmm_manager import generate_classification_results_for_eval
+from gdrive_loader import download_evaluation_data
 
 # --- Helper to load params ---
 def _load_best_or_default_params() -> Tuple[Dict, Dict]:
@@ -73,8 +73,6 @@ def quick_prototype_stage():
 
 def optimize_parameters_stage():
     """Stage 2b: Full parameter optimization."""
-    # Optimization needs to reload raw files multiple times, so we don't load the pickle here.
-    # The optimization module handles data loading internally.
     optimize_parameters_full()
 
 def cross_validation_stage():
@@ -150,6 +148,8 @@ def run_external_evaluation_stage():
     """
     print("\n=== FINALNA EWALUACJA (eval_2025.py) ===")
 
+    download_evaluation_data() # <--- WYWOŁANIE FUNKCJI POBIERANIA
+
     # 1. Załaduj finalny model
     final_models = load_models(FINAL_MODEL_FILENAME)
     if not final_models:
@@ -166,7 +166,7 @@ def run_external_evaluation_stage():
     # Próbujemy pobrać z folderu 'downloaded' (tam gdzie skrypt pobiera dane)
     # Jeśli Twoje pliki testowe są w innym miejscu, zmień ten argument!
     eval_samples = load_evaluation_files(mfcc_params, source_dir="eval") # <-- ZMIANA TUTAJ    
-    
+
     if not eval_samples:
         print("! Błąd: Nie wczytano żadnych próbek. Upewnij się, że pliki 001.wav, 002.wav... znajdują się w folderze 'downloaded'.")
         return
@@ -185,3 +185,5 @@ def run_external_evaluation_stage():
             print(f"Błąd podczas uruchamiania eval_2025: {e}")
             print("\nWSKAZÓWKA: Skrypt eval_2025 oczekuje, że w pliku results.csv znajdą się dokładnie te pliki, które ma w swoim kluczu.")
             print("Sprawdź, czy w folderze 'downloaded' masz pliki od 001.wav do 200.wav.")
+
+

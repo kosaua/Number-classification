@@ -11,7 +11,6 @@ from workflow import (
 
 def print_menu():
     """Displays the main menu of the application."""
-    # Using a single multi-line string for cleaner menu presentation.
     menu_text = """
 ========================================
    SYSTEM ROZPOZNAWANIA CYFR (GMM)
@@ -31,7 +30,7 @@ def print_menu():
 
 
 def main():
-    # Menu Action Mapping
+
     actions = {
         "1": prepare_data_stage,
         "2a": quick_prototype_stage,

@@ -26,7 +26,7 @@ def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, 
         win_length=win_length, hop_length=hop_length, n_mels=n_mels
     ).T
 
-    # Remove the first coefficient (energy) usually index 0
+    # Remove the first coefficient 
     mfcc = mfcc[:, 1:]
     
     feature_list = [mfcc]
@@ -261,8 +261,8 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
 
     return train_speakers, test_speakers
 
-def load_evaluation_files(mfcc_params, source_dir="downloaded"):
-    """
+def load_evaluation_files(mfcc_params, source_dir):
+    """ 
     Wczytuje pliki WAV do ewaluacji (np. 001.wav, 002.wav) bez próby
     wyciągania etykiety z nazwy pliku.
     """

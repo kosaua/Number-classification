@@ -9,6 +9,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
+from config import EVAL_FOLDER_ID, EVAL_IA_FOLDER_ID
+
 SCOPES = "https://www.googleapis.com/auth/drive.readonly"
 
 def get_drive():
@@ -73,3 +75,23 @@ def download_data(folder_id, target="downloaded"):
 
     print(f"\nZakończono. Pobrano: {downloaded}, Pominięto (już istniejące): {skipped}")
     return target
+
+
+def download_evaluation_data():
+    """Pobiera dane ewaluacyjne do folderów 'eval' i 'eval_ia_2025'."""
+
+    print("\n--- POBIERANIE ZBIORÓW EWALUACYJNYCH ---")
+    
+    if not EVAL_FOLDER_ID:
+        print("! Pomięto: Brak ID dla folderu 'eval'. Upewnij się, że pliki są już na dysku.")
+    else:
+        print(f"Pobieranie danych eval (target: eval)...")
+        download_data(EVAL_FOLDER_ID, target="eval")
+
+    if not EVAL_IA_FOLDER_ID:
+        print("! Pomięto: Brak ID dla folderu 'eval_ia_2025'.")
+    else:
+        print(f"Pobieranie danych eval_ia_2025 (target: eval_ia_2025)...")
+        download_data(EVAL_IA_FOLDER_ID, target="eval_ia_2025")
+        
+    print("--- ZAKOŃCZONO POBIERANIE DANYCH EWALUACYJNYCH ---\n")
