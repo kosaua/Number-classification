@@ -5,7 +5,8 @@ from workflow import (
     optimize_parameters_stage,
     cross_validation_stage,
     train_final_model_stage,
-    evaluate_system_stage
+    evaluate_system_stage,
+    run_external_evaluation_stage
 )
 
 def print_menu():
@@ -22,7 +23,8 @@ def print_menu():
    c) Walidacja krzyżowa
 3. Trening modelu końcowego
 4. Ewaluacja systemu
-5. Wyjście
+5. Ewaluacja na nieznanym zbiorze
+6. Wyjście 
 ----------------------------------------
 """
     print(menu_text)
@@ -37,7 +39,8 @@ def main():
         "2c": cross_validation_stage,
         "3": train_final_model_stage,
         "4": evaluate_system_stage,
-        "5": lambda: sys.exit(0)
+        "5": run_external_evaluation_stage,
+        "6": lambda: sys.exit(0),
     }
 
     while True:

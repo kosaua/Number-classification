@@ -260,3 +260,50 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
     print(f"Mówcy do testu: {test_speakers}")
 
     return train_speakers, test_speakers
+
+def load_evaluation_files(mfcc_params, source_dir="downloaded"):
+    """
+    Wczytuje pliki WAV do ewaluacji (np. 001.wav, 002.wav) bez próby
+    wyciągania etykiety z nazwy pliku.
+    """
+    # Sprawdźmy też folder bieżący, jeśli pliki są wrzucone luzem
+    if not os.path.exists(source_dir):
+        # Fallback na bieżący katalog, jeśli folder downloaded nie istnieje
+        source_dir = "." 
+    
+    wav_files = [f for f in listdir(source_dir) if isfile(join(source_dir, f)) and f.lower().endswith('.wav')]
+    
+    # Filtrowanie: eval_2025 oczekuje plików typu 001.wav, 100.wav itp.
+    # Wybieramy tylko te, które mają cyfrową nazwę (opcjonalne, ale bezpieczniejsze)
+    eval_files = []
+    for f in wav_files:
+        # Sprawdzamy czy nazwa (bez .wav) jest liczbą (np. "001")
+        name_root = os.path.splitext(f)[0]
+        if name_root.isdigit():
+            eval_files.append(f)
+    
+    # Jeśli nie znalazł numerycznych, bierzemy wszystkie wav (na wypadek innego nazewnictwa)
+    if not eval_files:
+        print("UWAGA: Nie znaleziono plików typu '001.wav'. Wczytuję wszystkie pliki WAV z folderu.")
+        eval_files = wav_files
+
+    print(f"Znaleziono {len(eval_files)} plików do ewaluacji w '{source_dir}'.")
+    
+    samples_list = []
+
+    for filename in eval_files:
+        full_path = join(source_dir, filename)
+        try:
+            x, fs = librosa.load(full_path, sr=16000, mono=True)
+            mfcc = get_mfcc(x, fs, **mfcc_params)
+            
+            if mfcc is not None:
+                samples_list.append({
+                    "filename": filename.lower(), # eval_2025 często wymaga małych liter
+                    "MFCC": mfcc,
+                    "num": -1 # Etykieta nieznana/nieistotna w tym momencie
+                })
+        except Exception as e:
+            print(f"Błąd wczytywania {filename}: {e}")
+
+    return samples_list

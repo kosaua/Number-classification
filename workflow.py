@@ -12,11 +12,15 @@ from audio_processing import (
     load_train_files_and_determine_mfcc, 
     prepare_training_data, 
     split_train_test_by_speaker,
+    load_evaluation_files,
     validate_data_quality
 )
 from gmm_manager import train_gmms, save_models, load_models
 from evaluation import calculate_accuracy, perform_cross_validation, evaluate_system, print_evaluation_report
 from optimization import optimize_parameters_full
+import eval_2025
+from utils import save_results_for_eval_script
+from gmm_manager import generate_classification_results_for_eval
 
 # --- Helper to load params ---
 def _load_best_or_default_params() -> Tuple[Dict, Dict]:
@@ -138,3 +142,46 @@ def evaluate_system_stage():
     # 5. Evaluate (usunięto n_samples)
     metrics = evaluate_system(final_model, test_samples_ready)
     print_evaluation_report(metrics)
+
+
+def run_external_evaluation_stage():
+    """
+    ETAP SPECJALNY: Uruchamia logikę testowania zgodną z eval_2025.py.
+    """
+    print("\n=== FINALNA EWALUACJA (eval_2025.py) ===")
+
+    # 1. Załaduj finalny model
+    final_models = load_models(FINAL_MODEL_FILENAME)
+    if not final_models:
+        print("! Błąd: Nie znaleziono modelu finalnego. Najpierw wykonaj Etap 3.")
+        return
+
+    # 2. Załaduj parametry
+    mfcc_params, _ = _load_best_or_default_params()
+
+    # 3. Wczytaj dane DEDYKOWANE do ewaluacji (001.wav itd.)
+    # UWAGA: Upewnij się, że pliki 001.wav... są w folderze 'downloaded' lub tam gdzie wskazuje skrypt
+    print("Wczytywanie plików ewaluacyjnych (001.wav - ...)...")
+    
+    # Próbujemy pobrać z folderu 'downloaded' (tam gdzie skrypt pobiera dane)
+    # Jeśli Twoje pliki testowe są w innym miejscu, zmień ten argument!
+    eval_samples = load_evaluation_files(mfcc_params, source_dir="eval") # <-- ZMIANA TUTAJ    
+    
+    if not eval_samples:
+        print("! Błąd: Nie wczytano żadnych próbek. Upewnij się, że pliki 001.wav, 002.wav... znajdują się w folderze 'downloaded'.")
+        return
+
+    # 4. Wygeneruj wyniki
+    results_data = generate_classification_results_for_eval(final_models, eval_samples)
+
+    # 5. Zapisz do results.csv
+    if save_results_for_eval_script(results_data, "results.csv"):
+        
+        # 6. Uruchom zewnętrzny skrypt
+        print("\nUruchamiam skrypt oceniający AGH (eval_2025)...")
+        try:
+            eval_2025.evaluate("results.csv")
+        except Exception as e:
+            print(f"Błąd podczas uruchamiania eval_2025: {e}")
+            print("\nWSKAZÓWKA: Skrypt eval_2025 oczekuje, że w pliku results.csv znajdą się dokładnie te pliki, które ma w swoim kluczu.")
+            print("Sprawdź, czy w folderze 'downloaded' masz pliki od 001.wav do 200.wav.")

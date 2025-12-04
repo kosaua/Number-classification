@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.mixture import GaussianMixture
 from tabulate import tabulate
-from typing import Dict, Tuple, Any, Optional
+from typing import Dict, Tuple, Any, Optional, List
 
 from decorators import safe_execution
 from audio_processing import load_gmm_params
@@ -83,3 +83,33 @@ def load_models(filename: str = DEFAULT_MODEL_FILENAME) -> Optional[Dict]:
     if models:
         print(f"Dostępne modele dla cyfr: {list(models.keys())}")
     return models
+
+def generate_classification_results_for_eval(gmm_models: Dict[str, GaussianMixture], samples: List[Dict]) -> List[List[Any]]:
+    """
+    Przeprowadza klasyfikację dla listy próbek i przygotowuje dane pod eval_2025.
+    Zwraca listę list: [[filename, predicted_label, max_score], ...]
+    """
+    results_rows = []
+    
+    print(f"Rozpoczynam klasyfikację {len(samples)} plików dla ewaluacji...")
+    
+    for sample in samples:
+        filename = sample.get("filename")
+        mfcc = sample.get("MFCC")
+        
+        # Pomijamy błędne próbki
+        if filename is None or mfcc is None:
+            continue
+            
+        # Używamy istniejącej funkcji classify_sample
+        predicted_digit, scores = classify_sample(gmm_models, mfcc, show_table=False)
+        
+        if predicted_digit is not None:
+            # Pobieramy wynik (log-likelihood) dla zwycięskiej cyfry
+            max_score = scores[predicted_digit]
+            results_rows.append([filename, predicted_digit, max_score])
+        else:
+            # W przypadku błędu klasyfikacji (np. puste dane)
+            results_rows.append([filename, -1, -9999.0])
+            
+    return results_rows
