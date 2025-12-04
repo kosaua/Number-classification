@@ -53,3 +53,18 @@ def load_pickle(filename: str) -> Any:
         data = pickle.load(f)
     print(f"Wczytano z pliku: {filename}")
     return data
+
+@safe_execution("Błąd zapisu listy do CSV", return_on_error=False)
+def save_list_to_csv(data_list: List[Dict[str, Any]], filename: str) -> bool:
+    """Saves a list of dictionaries to a CSV file."""
+    if not data_list:
+        return False
+        
+    keys = data_list[0].keys()
+    with open(filename, "w", newline='', encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=keys)
+        writer.writeheader()
+        writer.writerows(data_list)
+    
+    print(f"Zapisano dane ({len(data_list)} wierszy) do pliku: {filename}")
+    return True

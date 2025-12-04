@@ -2,3 +2,8 @@ librosa
 numpy
 tabulate
 scikit-learn
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+matplotlib

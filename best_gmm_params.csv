@@ -1,2 +1,2 @@
-n_components,cov_type
-4,tied
+num_components,cov_type,max_iter,random_state
+4,diag,200,42

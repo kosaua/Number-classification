@@ -5,6 +5,10 @@ import librosa
 from collections import defaultdict
 from pathlib import Path
 from tabulate import tabulate
+from gdrive_loader import download_data
+from os import listdir
+from os.path import isfile
+from ntpath import join
 
 # Custom imports
 from config import DEFAULT_MFCC_PARAMS, DEFAULT_GMM_PARAMS
@@ -80,13 +84,15 @@ def load_gmm_params():
 
 def load_train_files_and_determine_mfcc(mfcc_params, show_table=False):
     """Loads WAV files and computes MFCCs."""
-    train_dir = Path("train_data")
+
+    folder_id = "1WQVB4mqdNBSvpa1SZ8EbUc5eJ--e1t6y"
+    train_dir = download_data(folder_id)
     
-    if not train_dir.exists():
+    if not os.path.exists(train_dir):
         print(f"Brak folderu {train_dir}!")
         return None
         
-    wav_files = sorted(list(train_dir.glob("*.wav")))
+    wav_files = [f for f in listdir(train_dir) if isfile(join(train_dir, f)) and f.lower().endswith('.wav')]
     
     if not wav_files:
         print("Nie znaleziono plików WAV w folderze train_data!")
@@ -95,26 +101,32 @@ def load_train_files_and_determine_mfcc(mfcc_params, show_table=False):
     print(f"Znaleziono {len(wav_files)} plików audio.")
     sound_data = defaultdict(list)
 
-    for file_path in wav_files:
+    for filename in wav_files:
+        # Tworzymy pełną ścieżkę do pliku
+        full_path = join(train_dir, filename)
+        
         try:
-            x, fs = librosa.load(file_path, sr=16000, mono=True)
+            # Ładujemy używając pełnej ścieżki
+            x, fs = librosa.load(full_path, sr=16000, mono=True)
             mfcc = get_mfcc(x, fs, **mfcc_params)
         except Exception as e:
-            print(f"Błąd przetwarzania pliku {file_path.name}: {e}")
+            # Tutaj używamy samej zmiennej filename (to string, nie obiekt)
+            print(f"Błąd przetwarzania pliku {filename}: {e}")
             mfcc = None
 
-        # Logic assuming filename format 'XX..._Y...' where XX is speaker and Y is digit
-        filename = file_path.name
-        speaker_id = filename[0:2]
-        digit = filename[6]
-
-        sound_data[speaker_id].append({
-            "MFCC": mfcc,
-            "num": digit,
-            "filename": filename
-        })
-    
-    print("Wczytano pliki i wyznaczono z nich macierze MFCC.")
+        # Logika wyciągania metadanych z nazwy pliku
+        # filename to już string, więc używamy go bezpośrednio
+        if len(filename) >= 7: # Zabezpieczenie przed zbyt krótkimi nazwami
+             speaker_id = filename[0:2]
+             digit = filename[6]
+             
+             sound_data[speaker_id].append({
+                "MFCC": mfcc,
+                "num": digit,
+                "filename": filename
+             })
+        else:
+             print(f"Pominięto plik o nieprawidłowej nazwie: {filename}")
 
     if show_table:
         _display_mfcc_summary(sound_data)
