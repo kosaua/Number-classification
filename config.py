@@ -23,5 +23,6 @@ BEST_MFCC_PARAMS_FILE = "best_mfcc_params.csv"
 BEST_GMM_PARAMS_FILE = "best_gmm_params.csv"
 OPTIMIZATION_RESULTS_FILE = "optimization_results.csv"
 
+TRAIN_DATA_FOLDER_ID = "1WQVB4mqdNBSvpa1SZ8EbUc5eJ--e1t6y"
 EVAL_FOLDER_ID = "1Ycuxo3aCw4yAXQBNPmf9cYcgNJRoTrGE"
 EVAL_IA_FOLDER_ID = "1pivFMeM-_zlYEn_a8bTNv-wJfVM8LIDQ"

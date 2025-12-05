@@ -7,15 +7,13 @@ from pathlib import Path
 from tabulate import tabulate
 from gdrive_loader import download_data
 from os import listdir
-from os.path import isfile
-from ntpath import join
+from os.path import isfile, join
 
 # Custom imports
-from config import DEFAULT_MFCC_PARAMS, DEFAULT_GMM_PARAMS
+from config import TRAIN_DATA_FOLDER_ID
 from decorators import safe_execution
-from utils import load_params_from_csv, save_pickle, load_pickle
 
-# --- Ekstrakcja cech MFCC ---
+# --- MFCC feature extraction ---”
 
 @safe_execution("Błąd podczas obliczania MFCC")
 def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, count_delta_delta):
@@ -45,47 +43,12 @@ def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, 
     
     return mfcc
 
-# --- Wczytywanie parametrów ---
-
-def _print_params(title: str, params: dict):
-    """Helper to visualize parameters."""
-    print(f"{title}:")
-    table_data = [{"parametr": k, "wartość": v} for k, v in params.items()]
-    print(tabulate(table_data, headers="keys", tablefmt="grid"))
-
-def load_mfcc_params():
-    """Loads MFCC params from CSV or defaults."""
-    base_dir = Path(__file__).parent
-    params = load_params_from_csv(base_dir / "mfcc_params.csv")
-    
-    if params:
-        _print_params("Parametry MFCC (z pliku)", params)
-        return params
-
-    print("Używam domyślnych parametrów MFCC")
-    _print_params("Parametry MFCC (domyślne)", DEFAULT_MFCC_PARAMS)
-    return DEFAULT_MFCC_PARAMS.copy()
-
-def load_gmm_params():
-    """Loads GMM params from CSV or defaults."""
-    base_dir = Path(__file__).parent
-    params = load_params_from_csv(base_dir / "gmm_params.csv")
-    
-    if params:
-        _print_params("Parametry GMM (z pliku)", params)
-        return params
-
-    print("Używam domyślnych parametrów GMM")
-    _print_params("Parametry GMM (domyślne)", DEFAULT_GMM_PARAMS)
-    return DEFAULT_GMM_PARAMS.copy()
-
-
 # --- Wszytywanie danych ---
 
 def load_train_files_and_determine_mfcc(mfcc_params, show_table=False):
     """Loads WAV files and computes MFCCs."""
 
-    folder_id = "1WQVB4mqdNBSvpa1SZ8EbUc5eJ--e1t6y"
+    folder_id = TRAIN_DATA_FOLDER_ID
     train_dir = download_data(folder_id)
     
     if not os.path.exists(train_dir):
@@ -102,21 +65,17 @@ def load_train_files_and_determine_mfcc(mfcc_params, show_table=False):
     sound_data = defaultdict(list)
 
     for filename in wav_files:
-        # Tworzymy pełną ścieżkę do pliku
+        
         full_path = join(train_dir, filename)
         
         try:
-            # Ładujemy używając pełnej ścieżki
             x, fs = librosa.load(full_path, sr=16000, mono=True)
             mfcc = get_mfcc(x, fs, **mfcc_params)
         except Exception as e:
-            # Tutaj używamy samej zmiennej filename (to string, nie obiekt)
             print(f"Błąd przetwarzania pliku {filename}: {e}")
             mfcc = None
 
-        # Logika wyciągania metadanych z nazwy pliku
-        # filename to już string, więc używamy go bezpośrednio
-        if len(filename) >= 7: # Zabezpieczenie przed zbyt krótkimi nazwami
+        if len(filename) >= 7:
              speaker_id = filename[0:2]
              digit = filename[6]
              
@@ -165,7 +124,7 @@ def prepare_training_data(sound_data, show_table=False):
             
             if isinstance(mfcc, np.ndarray) and mfcc.size > 0:
                 training_data_concat[digit].append(mfcc)
-                # Store sample data for testing (important for non-concatenated testing)
+                # Store sample data for testing
                 testing_data_samples[digit].append({
                     "MFCC": mfcc, 
                     "filename": s["filename"], 

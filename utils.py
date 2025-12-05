@@ -72,8 +72,8 @@ def save_list_to_csv(data_list: List[Dict[str, Any]], filename: str) -> bool:
 @safe_execution("Błąd zapisu wyników ewaluacji", return_on_error=False)
 def save_results_for_eval_script(results_list: List[List[Any]], filename: str = "results.csv") -> bool:
     """
-    Specjalna funkcja do zapisu wyników pod skrypt eval_2025.py.
-    Format: bez nagłówka, kolumny: [filename, predicted_digit, score]
+    A special function for saving results for the script eval_2025.py.
+    Format: no header, columns: [filename, predicted_digit, score]
     """
     with open(filename, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)

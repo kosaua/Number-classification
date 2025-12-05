@@ -4,16 +4,15 @@ from tabulate import tabulate
 from typing import Dict, Tuple, Any, Optional, List
 
 from decorators import safe_execution
-from audio_processing import load_gmm_params
 from utils import save_pickle, load_pickle
-from config import DEFAULT_MODEL_FILENAME
+from config import DEFAULT_MODEL_FILENAME, DEFAULT_GMM_PARAMS
 
 @safe_execution("Błąd podczas treningu GMM")
 def train_gmms(training_dict: Dict[str, np.ndarray], gmm_params: Optional[Dict] = None) -> Dict[str, GaussianMixture]:
     """Trains GMM models for each digit provided in the training dictionary."""
     
     if gmm_params is None:
-        gmm_params = load_gmm_params()
+        gmm_params = DEFAULT_GMM_PARAMS
     
     gmm_models = {}
     print(f"Rozpoczynam trening GMM (komponenty: {gmm_params['num_components']})...")

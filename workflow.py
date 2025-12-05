@@ -3,11 +3,10 @@ from typing import Tuple, Dict, Any
 
 from config import (
     PROCESSED_DATA_FILE, DEFAULT_MODEL_FILENAME, FINAL_MODEL_FILENAME,
-    BEST_MFCC_PARAMS_FILE, BEST_GMM_PARAMS_FILE
+    BEST_MFCC_PARAMS_FILE, BEST_GMM_PARAMS_FILE, DEFAULT_MFCC_PARAMS, DEFAULT_GMM_PARAMS
 )
 from utils import load_pickle, save_pickle, load_params_from_csv
 from audio_processing import (
-    load_mfcc_params, load_gmm_params,
     load_train_files_and_determine_mfcc, 
     prepare_training_data, 
     split_train_test_by_speaker,
@@ -33,14 +32,14 @@ def _load_best_or_default_params() -> Tuple[Dict, Dict]:
         return mfcc, gmm
     
     print("-> Brak zapisanych najlepszych parametrów. Używam domyślnych.")
-    return load_mfcc_params(), load_gmm_params()
+    return DEFAULT_MFCC_PARAMS, DEFAULT_GMM_PARAMS
 
 # --- Stages ---
 
 def prepare_data_stage():
     """Stage 1: Initial data preparation."""
     print("\n=== ETAP 1: PRZYGOTOWANIE DANYCH ===")
-    mfcc_params = load_mfcc_params()
+    mfcc_params = DEFAULT_MFCC_PARAMS
     
     full_dataset = load_train_files_and_determine_mfcc(mfcc_params, show_table=True)
     if not full_dataset:
