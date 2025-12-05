@@ -28,7 +28,6 @@ def get_drive():
 def download_data(folder_id, target="downloaded"):
     service = get_drive()
 
-    # Pobieramy listę plików z Google Drive
     results = service.files().list(
         q=f"'{folder_id}' in parents", 
         fields="files(id, name, mimeType, size)", 
@@ -44,20 +43,15 @@ def download_data(folder_id, target="downloaded"):
     print(f"Sprawdzam {len(files)} plików w chmurze...")
 
     for f in files:
-        # Pomiń foldery
         if f.get('mimeType') == 'application/vnd.google-apps.folder':
             continue
 
         file_path = os.path.join(target, f['name'])
 
-        # --- POPRAWKA: Sprawdź czy plik już istnieje ---
         if os.path.exists(file_path):
-            # Opcjonalnie: można sprawdzać też rozmiar pliku, ale dla prostoty sprawdzamy tylko istnienie
             skipped += 1
             continue
-        # -----------------------------------------------
 
-        # Jeśli nie istnieje, pobierz go
         try:
             request = service.files().get_media(fileId=f['id'])
             with io.FileIO(file_path, 'wb') as file:
@@ -67,7 +61,6 @@ def download_data(folder_id, target="downloaded"):
                     status, done = downloader.next_chunk()
             
             downloaded += 1
-            # Wyświetl kropkę dla każdego pobranego pliku, żeby widzieć postęp
             print(".", end="", flush=True) 
             
         except Exception as e:
@@ -78,7 +71,7 @@ def download_data(folder_id, target="downloaded"):
 
 
 def download_evaluation_data():
-    """Pobiera dane ewaluacyjne do folderów 'eval' i 'eval_ia_2025'."""
+    """Download and save date to eval and eval_ia_2025 folders'."""
 
     print("\n--- POBIERANIE ZBIORÓW EWALUACYJNYCH ---")
     

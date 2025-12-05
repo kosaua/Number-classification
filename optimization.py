@@ -30,16 +30,10 @@ def _generate_param_combinations():
         delta_opts, gmm_comp_vals, gmm_cov_vals
     ))
 
-# Nowa funkcja pomocnicza, która przetwarza jedną kombinację
 def _worker_optimize_single(combination: tuple):
-    # 1. Rozpakowanie kombinacji
+    """Helper function that processes a single combination"""    
     n_mfcc, n_fft, win_len, hop_len, n_mels, (delta, delta2), gmm_comp, gmm_cov = combination
 
-    # Sprawdzenie ograniczeń
-    if win_len > n_fft:
-        return None 
-
-    # Przygotowanie parametrów
     mfcc_params = {
         'n_mfcc': n_mfcc, 'n_fft': n_fft, 'win_length': win_len,
         'hop_length': hop_len, 'n_mels': n_mels,
@@ -50,25 +44,20 @@ def _worker_optimize_single(combination: tuple):
         'max_iter': 200, 'random_state': 42
     }
     
-    # Zapewnienie, że logi są widoczne
     print(f"\nSTART MFCC: n_mfcc={n_mfcc}, n_fft={n_fft} | GMM: comp={gmm_comp}, cov={gmm_cov}")
 
     try:
-        # 1. Wczytywanie i obliczanie MFCC (wolny krok)
         dataset = load_train_files_and_determine_mfcc(mfcc_params, show_table=False)
         if not dataset: return None
 
-        # 2. Podział danych
         train_spk, test_spk = split_train_test_by_speaker(dataset, test_fraction=0.2, seed=42)
         if not train_spk or not test_spk: return None
 
         train_data, _ = prepare_training_data({k: dataset[k] for k in train_spk}, show_table=False)
         _, test_samples = prepare_training_data({k: dataset[k] for k in test_spk}, show_table=False)
 
-        # 3. Trening GMM
         models = train_gmms(train_data, gmm_params)
 
-        # 4. Ewaluacja
         accuracy, _, _ = calculate_accuracy(models, test_samples) 
         
         print(f"DONE MFCC: n_mfcc={n_mfcc}, n_fft={n_fft} | GMM: comp={gmm_comp}, cov={gmm_cov} -> Wynik: {accuracy:.2f}%")
@@ -95,12 +84,10 @@ def optimize_parameters_full():
     results = []
     start_time = time.time()
     
-    # Użycie ProcessPoolExecutor do równoległego uruchamiania zadań
-    # max_workers=None użyje wszystkich dostępnych rdzeni CPU
+    # Using ProcessPoolExecutor to run tasks in parallel
+    # max_workers=None will use all available CPU cores
     with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
         
-        # Mapowanie funkcji roboczej do wszystkich kombinacji i zbieranie wyników
-        # as_completed zwraca wyniki w kolejności ich zakończenia (nie kolejności uruchomienia)
         futures = {executor.submit(_worker_optimize_single, comb): comb for comb in combinations}
         
         for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
@@ -108,7 +95,6 @@ def optimize_parameters_full():
             if result:
                 results.append(result)
             
-            # Wypisywanie postępu
             elapsed = time.time() - start_time
             avg_time = elapsed / i
             remaining_tasks = total_combinations - i
@@ -124,23 +110,16 @@ def _process_optimization_results(results: List[Dict]):
         print("Nie znaleziono żadnych wyników!")
         return None
 
-    # 1. Sortowanie (Najlepsze wyniki na górze)
     results.sort(key=lambda x: x["test_accuracy"], reverse=True)
     best_result = results[0]
 
-    # 2. Przygotowanie płaskiej listy dla CSV
+    # Save and print
     flat_data = [
         _flatten_result(res, rank=i+1) 
         for i, res in enumerate(results)
     ]
-
-    # 3. Zapis wszystkich wyników (użycie funkcji z utils)
     save_list_to_csv(flat_data, OPTIMIZATION_RESULTS_FILE)
-
-    # 4. Zapis najlepszych parametrów (użycie funkcji z utils)
     _save_best_config(best_result)
-
-    # 5. Wyświetlenie liderów
     _print_leaderboard(results[:10])
     
     return best_result
@@ -168,7 +147,7 @@ def _flatten_result(result: Dict, rank: int) -> Dict[str, Any]:
 
 def _save_best_config(best_result: Dict):
     """Helper: Saves the best configuration to separate config files."""
-    print(f"\n=== ZWYCIĘZCA (Acc: {best_result['test_accuracy']:.2f}%) ===")
+    print(f"\n=== NAJLEPSZY WYNIK (Acc: {best_result['test_accuracy']:.2f}%) ===")
     save_params_to_csv(best_result['mfcc_params'], BEST_MFCC_PARAMS_FILE)
     save_params_to_csv(best_result['gmm_params'], BEST_GMM_PARAMS_FILE)
 

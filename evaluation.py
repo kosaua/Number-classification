@@ -25,10 +25,6 @@ def calculate_accuracy(gmm_models: Dict, test_samples: Dict[str, List[Dict[str, 
             if mfcc_matrix is None or not isinstance(mfcc_matrix, np.ndarray) or mfcc_matrix.shape[0] == 0:
                 continue
 
-            # Classify the whole matrix (all frames)
-            # The classification function needs to be updated or we need to classify frame-by-frame
-            # For simplicity and given the GMM structure, we classify the entire matrix 
-            # by aggregating log-likelihoods over all frames.
             # classify_sample in gmm_manager.py calculates score for the full mfcc matrix.
             predicted, _ = classify_sample(gmm_models, mfcc_matrix, show_table=False)
 
@@ -70,8 +66,8 @@ def perform_cross_validation(raw_dataset: Dict, k_folds: int = 5):
         test_raw = {k: raw_dataset[k] for k in test_speakers}
         
         # 3. Prepare Data (Concatenated for Train, Samples for Test)
-        train_ready, test_ready_samples = prepare_training_data(train_raw, show_table=False)
-        _, test_ready_samples_for_test = prepare_training_data(test_raw, show_table=False) # Only need the second part of tuple
+        train_ready, _ = prepare_training_data(train_raw, show_table=False)
+        _, test_ready_samples_for_test = prepare_training_data(test_raw, show_table=False) 
         
         # 4. Train
         models = train_gmms(train_ready)
@@ -99,7 +95,6 @@ def perform_cross_validation(raw_dataset: Dict, k_folds: int = 5):
 
 
 @safe_execution("Błąd podczas ewaluacji systemu")
-# Zmieniona sygnatura i logika funkcji
 def evaluate_system(gmm_models: Dict, test_samples: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
     """
     Performs a comprehensive evaluation of the system using whole audio samples.

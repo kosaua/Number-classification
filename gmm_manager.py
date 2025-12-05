@@ -67,10 +67,8 @@ def _display_classification_scores(predicted, scores):
     print("\nOceny modeli GMM:")
     print(f"Przewidywana liczba: {predicted}")
     
-    # Sort by key (digit) for clean display
     ordered = sorted(scores.items(), key=lambda x: str(x[0]))
     
-    # Transpose for horizontal table
     table_data = [{str(k): f"{v:.2f}" for k, v in ordered}]
     print(tabulate(table_data, headers="keys", tablefmt="grid"))
 
@@ -85,8 +83,8 @@ def load_models(filename: str = DEFAULT_MODEL_FILENAME) -> Optional[Dict]:
 
 def generate_classification_results_for_eval(gmm_models: Dict[str, GaussianMixture], samples: List[Dict]) -> List[List[Any]]:
     """
-    Przeprowadza klasyfikację dla listy próbek i przygotowuje dane pod eval_2025.
-    Zwraca listę list: [[filename, predicted_label, max_score], ...]
+    Performs classification for a list of samples and prepares the data for eval_2025.
+    Returns a list of lists: [[filename, predicted_label, max_score], ...]
     """
     results_rows = []
     
@@ -96,19 +94,15 @@ def generate_classification_results_for_eval(gmm_models: Dict[str, GaussianMixtu
         filename = sample.get("filename")
         mfcc = sample.get("MFCC")
         
-        # Pomijamy błędne próbki
         if filename is None or mfcc is None:
             continue
             
-        # Używamy istniejącej funkcji classify_sample
         predicted_digit, scores = classify_sample(gmm_models, mfcc, show_table=False)
         
         if predicted_digit is not None:
-            # Pobieramy wynik (log-likelihood) dla zwycięskiej cyfry
             max_score = scores[predicted_digit]
             results_rows.append([filename, predicted_digit, max_score])
         else:
-            # W przypadku błędu klasyfikacji (np. puste dane)
             results_rows.append([filename, -1, -9999.0])
             
     return results_rows

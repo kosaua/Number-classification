@@ -2,7 +2,7 @@ import sys
 from typing import Tuple, Dict, Any
 
 from config import (
-    PROCESSED_DATA_FILE, DEFAULT_MODEL_FILENAME, FINAL_MODEL_FILENAME,
+    PROCESSED_DATA_FILE, FINAL_MODEL_FILENAME, PROTOTYPE_FILE,
     BEST_MFCC_PARAMS_FILE, BEST_GMM_PARAMS_FILE, DEFAULT_MFCC_PARAMS, DEFAULT_GMM_PARAMS
 )
 from utils import load_pickle, save_pickle, load_params_from_csv
@@ -68,7 +68,7 @@ def quick_prototype_stage():
     # Użycie test_samples w calculate_accuracy
     acc, _, _ = calculate_accuracy(models, test_samples)
     print(f"\n>> Skuteczność prototypu: {acc:.2f}%")
-    save_models(models, "prototype_models.pkl")
+    save_models(models, PROTOTYPE_FILE)
 
 def optimize_parameters_stage():
     """Stage 2b: Full parameter optimization."""

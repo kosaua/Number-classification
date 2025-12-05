@@ -43,7 +43,7 @@ def get_mfcc(x, fs, n_mfcc, n_fft, win_length, hop_length, n_mels, count_delta, 
     
     return mfcc
 
-# --- Wszytywanie danych ---
+# --- Loading data ---
 
 def load_train_files_and_determine_mfcc(mfcc_params, show_table=False):
     """Loads WAV files and computes MFCCs."""
@@ -161,7 +161,7 @@ def validate_data_quality(dataset):
         'total_samples': 0,
         'missing_mfcc': 0,
         'samples_per_digit': defaultdict(int),
-        'total_frames_per_digit': defaultdict(int), # Changed to sum for correct avg calculation
+        'total_frames_per_digit': defaultdict(int),
         'samples_per_speaker': defaultdict(int)
     }
 
@@ -222,30 +222,9 @@ def split_train_test_by_speaker(sound_data, test_fraction=0.2, seed=None):
 
 def load_evaluation_files(mfcc_params, source_dir):
     """ 
-    Wczytuje pliki WAV do ewaluacji (np. 001.wav, 002.wav) bez próby
-    wyciągania etykiety z nazwy pliku.
+    Loads WAV files for evaluation (e.g., 001.wav, 002.wav)
     """
-    # Sprawdźmy też folder bieżący, jeśli pliki są wrzucone luzem
-    if not os.path.exists(source_dir):
-        # Fallback na bieżący katalog, jeśli folder downloaded nie istnieje
-        source_dir = "." 
-    
-    wav_files = [f for f in listdir(source_dir) if isfile(join(source_dir, f)) and f.lower().endswith('.wav')]
-    
-    # Filtrowanie: eval_2025 oczekuje plików typu 001.wav, 100.wav itp.
-    # Wybieramy tylko te, które mają cyfrową nazwę (opcjonalne, ale bezpieczniejsze)
-    eval_files = []
-    for f in wav_files:
-        # Sprawdzamy czy nazwa (bez .wav) jest liczbą (np. "001")
-        name_root = os.path.splitext(f)[0]
-        if name_root.isdigit():
-            eval_files.append(f)
-    
-    # Jeśli nie znalazł numerycznych, bierzemy wszystkie wav (na wypadek innego nazewnictwa)
-    if not eval_files:
-        print("UWAGA: Nie znaleziono plików typu '001.wav'. Wczytuję wszystkie pliki WAV z folderu.")
-        eval_files = wav_files
-
+    eval_files = [f for f in listdir(source_dir) if isfile(join(source_dir, f)) and f.lower().endswith('.wav')]
     print(f"Znaleziono {len(eval_files)} plików do ewaluacji w '{source_dir}'.")
     
     samples_list = []
@@ -258,9 +237,9 @@ def load_evaluation_files(mfcc_params, source_dir):
             
             if mfcc is not None:
                 samples_list.append({
-                    "filename": filename.lower(), # eval_2025 często wymaga małych liter
+                    "filename": filename.lower(), 
                     "MFCC": mfcc,
-                    "num": -1 # Etykieta nieznana/nieistotna w tym momencie
+                    "num": -1
                 })
         except Exception as e:
             print(f"Błąd wczytywania {filename}: {e}")

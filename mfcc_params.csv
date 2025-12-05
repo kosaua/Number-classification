@@ -1,2 +1,0 @@
-n_mfcc,n_fft,win_length,hop_length,n_mels,count_delta,count_delta_delta
-20,1024,512,256,64,False,False
