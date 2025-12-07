@@ -7,7 +7,7 @@ A Python-based project designed to automatically classify digits from WAV files 
 * Henryk Kosała
 
 ## Raport:
-[Raport](Number_Classification_final_raport) consists of:
+[Raport](Number_Classification_final_raport.pdf) consists of:
  * General info
  * Architecture of the system and data flow
  * Status
