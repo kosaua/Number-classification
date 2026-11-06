@@ -1,6 +1,8 @@
 # Number-classification
 A Python-based project designed to automatically classify digits from WAV files using GMM and MFCC features, and to evaluate classification accuracy through cross-validation.
 
+This project was developed as part of the Speech Technology course as a graded university assignment.
+
 ## Group 3:
 * Oliwia Chmura
 * Mateusz Juszczak
